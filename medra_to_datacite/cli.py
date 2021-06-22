@@ -55,6 +55,12 @@ def rebuildAsDataciteUploadJson(node, prefix):
     return {"data": data}
 
 
+def saveErrorMetadata(metadata):
+    """Write the metadata which is wrong to a predefined file."""
+    with open("error.json", "w", encoding="utf-8") as fp:
+        json.dump(metadata, fp, ensure_ascii=False, indent=4)
+
+
 @click.group()
 def cli():
     """Medra to datacite commandline tool."""
@@ -85,6 +91,7 @@ def transform(input_file, output_dir, test_mode, process_type):
 
     for node in visitor.nodes:
         if not valid(node["metadata"]):
+            saveErrorMetadata(node["metadata"])
             print("There is at least one NOT valid transformation.")
             exit()
 

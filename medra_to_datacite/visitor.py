@@ -15,9 +15,11 @@ json file representation of the datacite standard.
 
 from typing import List
 
+import typecheck as tc
 from lxml import etree
+from lxml.etree import _Element as Element
 
-from .helper import debug, xsd_ns
+from .helper import xsd_ns
 
 
 class MedraVisitor:
@@ -42,7 +44,6 @@ class MedraVisitor:
         self.prefix = prefix
         self.test_prefix = test_prefix
 
-    @debug
     def create(process_type, test_mode=True, prefix=None, test_prefix=None):
         """Create the medra visitor."""
         if process_type == "article":
@@ -52,8 +53,8 @@ class MedraVisitor:
         else:
             raise ValueError("wrong schema given")
 
-    @debug
-    def process(self, node, parent):
+    @tc.typecheck
+    def process(self, node: Element):
         """Execute the corresponding method to the tag name."""
 
         def func_not_found(*args, **kwargs):
@@ -63,17 +64,18 @@ class MedraVisitor:
 
         tag_name = etree.QName(node).localname
         visit_func = getattr(self, f"visit_{tag_name}", func_not_found)
-        result = visit_func(node, parent)
+        result = visit_func(node)
         return result
 
-    @debug
-    def extend(self, key, value):
+    @tc.typecheck
+    def append(self, key: str, value: dict):
         if key not in self.node["metadata"]:
             self.node["metadata"][key] = []
 
-        self.node["metadata"][key].extend(value)
+        if value not in self.node["metadata"][key]:
+            self.node["metadata"][key].append(value)
 
-    @debug
+    @tc.typecheck
     def init_node(self):
         self.node = {
             "metadata": {},
@@ -82,24 +84,24 @@ class MedraVisitor:
             "url": "",
         }
 
-    @debug
-    def visit(self, node, parent=None):
+    @tc.typecheck
+    def visit(self, node: Element):
         """Visit default method and entry point for the class."""
         for child in node:
-            self.process(child, parent=node)
+            self.process(child)
 
-    @debug
-    def visit_Header(self, node, parent):
+    @tc.typecheck
+    def visit_Header(self, node: Element):
         """Visit method for Header tag."""
         pass
 
-    @debug
-    def visit_NotificationType(self, node, parent=None):
+    @tc.typecheck
+    def visit_NotificationType(self, node: Element):
         """Visit method for NotificationType tag."""
         pass
 
-    @debug
-    def visit_DOI(self, node, parent=None):
+    @tc.typecheck
+    def visit_DOI(self, node: Element):
         """Visit method for DOI tag."""
         doi = node.text
 
@@ -107,51 +109,49 @@ class MedraVisitor:
             doi = doi.replace(self.prefix, self.test_prefix)
 
         self.node["doi"] = doi
-        pass
 
-    @debug
-    def visit_DOIWebsiteLink(self, node, parent=None):
+    @tc.typecheck
+    def visit_DOIWebsiteLink(self, node: Element):
         """Visit method for DOIWebsiteLink tag."""
         self.node["url"] = node.text
-        pass
 
-    @debug
-    def visit_DOIStructuralType(self, node, parent=None):
+    @tc.typecheck
+    def visit_DOIStructuralType(self, node: Element):
         """Visit method for DOIStructuralType tag."""
         pass
 
-    @debug
-    def visit_RegistrantName(self, node, parent=None):
+    @tc.typecheck
+    def visit_RegistrantName(self, node: Element):
         """Visit method for RegistrantName tag."""
         self.node["metadata"]["publisher"] = node.text
 
-    @debug
-    def visit_RegistrationAuthority(self, node, parent=None):
+    @tc.typecheck
+    def visit_RegistrationAuthority(self, node: Element):
         """Visit method for RegistrationAuthority tag."""
         pass
 
-    @debug
-    def visit_WorkIdentifier(self, node, parent=None):
+    @tc.typecheck
+    def visit_WorkIdentifier(self, node: Element):
         """Visit method for WorkIdentifier tag."""
         pass
 
-    @debug
-    def visit_SerialPublication(self, node, parent=None):
+    @tc.typecheck
+    def visit_SerialPublication(self, node: Element):
         """Visit method for SerialPublication tag."""
-        self.visit(node, parent)
+        self.visit(node)
 
-    @debug
-    def visit_SerialWork(self, node, parent=None):
+    @tc.typecheck
+    def visit_SerialWork(self, node: Element):
         """Visit method for SerialWork tag."""
         pass
 
-    @debug
-    def visit_SerialVersion(self, node, parent=None):
+    @tc.typecheck
+    def visit_SerialVersion(self, node: Element):
         """Visit method for SerialVersion tag."""
         pass
 
-    @debug
-    def visit_Title(self, node, parent=None):
+    @tc.typecheck
+    def visit_Title(self, node: Element):
         """Visit method for Title tag."""
         self.titles.append(
             {
@@ -160,71 +160,72 @@ class MedraVisitor:
             }
         )
 
-    @debug
-    def visit_Publisher(self, node, parent=None):
+    @tc.typecheck
+    def visit_Publisher(self, node: Element):
         """Visit method for Publisher tag."""
         publisher = node.find(xsd_ns("PublisherName")).text
         self.node["metadata"]["publisher"] += f" & {publisher}"
-        pass
 
-    @debug
-    def visit_CountryOfPublication(self, node, parent=None):
+    @tc.typecheck
+    def visit_CountryOfPublication(self, node: Element):
         """Visit method for CountryOfPublication tag."""
         pass
 
-    @debug
-    def visit_JournalIssue(self, node, parent=None):
+    @tc.typecheck
+    def visit_JournalIssue(self, node: Element):
         """Visit method for JournalIssue tag."""
         pass
 
-    @debug
-    def visit_JournalVolumeNumber(self, node, parent=None):
+    @tc.typecheck
+    def visit_JournalVolumeNumber(self, node: Element):
         """Visit method for JournalVolumeNumber tag."""
         pass
 
-    @debug
-    def visit_JournalIssueNumber(self, node, parent=None):
+    @tc.typecheck
+    def visit_JournalIssueNumber(self, node: Element):
         """Visit method for JournalIssueNumber tag."""
         pass
 
-    @debug
-    def visit_JournalIssueDesignation(self, node, parent=None):
+    @tc.typecheck
+    def visit_JournalIssueDesignation(self, node: Element):
         """Visit method for JournalIsseDesignation tag."""
         pass
 
-    @debug
-    def visit_JournalIssueDate(self, node, parent=None):
+    @tc.typecheck
+    def visit_JournalIssueDate(self, node: Element):
         """Visit method for JournalIssueDate tag."""
         pass
 
-    @debug
-    def visit_ContentItem(self, node, parent=None):
+    @tc.typecheck
+    def visit_ContentItem(self, node: Element):
         """Visit method for ContentItem tag."""
         self.titles = []
         self.abstracts = []
         self.node["metadata"]["creators"] = []
 
-        self.visit(node, parent)
+        self.visit(node)
 
         self.node["metadata"]["titles"] = self.titles
-        self.extend("descriptions", self.abstracts)
 
-    @debug
-    def visit_SequenceNumber(self, node, parent=None):
+        for abstract in self.abstracts:
+            self.append("descriptions", abstract)
+
+    @tc.typecheck
+    def visit_SequenceNumber(self, node: Element):
         """Visit method for SequenceNumber tag."""
         pass
 
-    @debug
-    def visit_TextItem(self, node, parent=None):
+    @tc.typecheck
+    def visit_TextItem(self, node: Element):
         """Visit method for TextItem tag."""
         pass
 
-    @debug
-    def visit_Contributor(self, node, parent=None):
+    @tc.typecheck
+    def visit_Contributor(self, node: Element):
         """Visit method for Contributor tag."""
         self.contributor = {}
         self.affiliations = []
-        self.visit(node, parent)
+        self.visit(node)
 
         if len(self.affiliations) > 0:
             self.contributor["affiliation"] = self.affiliations
@@ -232,41 +233,44 @@ class MedraVisitor:
         # NOTE: there seams not to be a creators in medra
         self.node["metadata"]["creators"].append(self.contributor)
 
-    @debug
-    def visit_ContributorRole(self, node, parent=None):
+    @tc.typecheck
+    def visit_ContributorRole(self, node: Element):
         """Visit method for ContributorRole tag."""
         pass
 
-    @debug
-    def visit_PersonName(self, node, parent=None):
+    @tc.typecheck
+    def visit_PersonName(self, node: Element):
         """Visit method for PersonName tag."""
         pass
 
-    @debug
-    def visit_PersonNameInverted(self, node, parent=None):
+    @tc.typecheck
+    def visit_PersonNameInverted(self, node: Element):
         """Visit method for PersonNameInverted tag."""
         self.contributor["name"] = node.text
         self.contributor["nameType"] = "Personal"
-        pass
 
-    @debug
-    def visit_KeyNames(self, node, parent=None):
+    @tc.typecheck
+    def visit_KeyNames(self, node: Element):
         """Visit method for KeyNames tag."""
         pass
 
-    @debug
-    def visit_ProfessionalAffiliation(self, node, parent=None):
-        """Visit method for ProfessionalAffiliation tag."""
-        self.affiliations.append({"name": node.find(xsd_ns("Affiliation")).text})
+    @tc.typecheck
+    def visit_NamesBeforeKey(self, node: Element):
+        """Visit method for NamesBeforeKey tag."""
         pass
 
-    @debug
-    def visit_Language(self, node, parent=None):
+    @tc.typecheck
+    def visit_ProfessionalAffiliation(self, node: Element):
+        """Visit method for ProfessionalAffiliation tag."""
+        self.affiliations.append({"name": node.find(xsd_ns("Affiliation")).text})
+
+    @tc.typecheck
+    def visit_Language(self, node: Element):
         """Visit method for Language tag."""
         pass
 
-    @debug
-    def visit_OtherText(self, node, parent=None):
+    @tc.typecheck
+    def visit_OtherText(self, node: Element):
         """Visit method for OtherText tag."""
         self.abstracts.append(
             {
@@ -274,30 +278,29 @@ class MedraVisitor:
                 "descriptionType": "Abstract",
             }
         )
-        pass
 
-    @debug
-    def visit_PublicationDate(self, node, parent=None):
+    @tc.typecheck
+    def visit_PublicationDate(self, node: Element):
         """Visit method for PublicationDate tag."""
         self.node["metadata"]["publicationYear"] = node.text[:4]
 
-    @debug
-    def visit_RelatedWork(self, node, parent=None):
+    @tc.typecheck
+    def visit_RelatedWork(self, node: Element):
         """Visit method for RelatedWork tag."""
         pass
 
-    @debug
-    def visit_RelationCode(self, node, parent=None):
+    @tc.typecheck
+    def visit_RelationCode(self, node: Element):
         """Visit method for RelationCode tag."""
         pass
 
-    @debug
-    def visit_RelatedProduct(self, node, parent=None):
+    @tc.typecheck
+    def visit_RelatedProduct(self, node: Element):
         """Visit method for RelatedProduct tag."""
         pass
 
-    @debug
-    def visit_BiographicalNote(self, node, parent=None):
+    @tc.typecheck
+    def visit_BiographicalNote(self, node: Element):
         """Visit method for BiographicalNote tag."""
         pass
 
@@ -305,12 +308,12 @@ class MedraVisitor:
 class DOISerialArticleWork(MedraVisitor):
     """DOISerialArticleWork class."""
 
-    @debug
-    def visit_DOISerialArticleWork(self, node, parent):
+    @tc.typecheck
+    def visit_DOISerialArticleWork(self, node: Element):
         """Visit method for DOISerialArticleWork tag."""
         self.init_node()
 
-        self.visit(node, parent)
+        self.visit(node)
 
         self.node["id"] = f"https://doi.org/{self.node['doi']}"
         self.node["metadata"]["types"] = {
@@ -324,35 +327,35 @@ class DOISerialArticleWork(MedraVisitor):
 
         self.nodes.append(self.node)
 
-    @debug
-    def visit_SerialWork(self, node, parent=None):
+    @tc.typecheck
+    def visit_SerialWork(self, node: Element):
         """Visit method for SerialWork tag."""
         self.titles = []
-        self.visit(node, parent)
+        self.visit(node)
 
-        descriptions = [
-            {"description": obj["title"], "descriptionType": "SeriesInformation"}
-            for obj in self.titles
-        ]
-
-        self.extend("descriptions", descriptions)
+        for obj in self.titles:
+            description = {
+                "description": obj["title"],
+                "descriptionType": "SeriesInformation",
+            }
+            self.append("descriptions", description)
 
 
 class DOISerialIssueWork(MedraVisitor):
-    @debug
+    @tc.typecheck
     def init_node(self):
         super().init_node()
         self.node["metadata"] = {"creators": [{"name": ":none"}]}
 
-    @debug
-    def visit_DOISerialIssueWork(self, node, parent):
+    @tc.typecheck
+    def visit_DOISerialIssueWork(self, node: Element):
         self.init_node()
         self.abstracts = []
 
-        self.visit(node, parent)
+        self.visit(node)
 
-        if len(self.abstracts) > 0:
-            self.extend("descriptions", self.abstracts)
+        for abstract in self.abstracts:
+            self.append("descriptions", abstract)
 
         self.node["id"] = f"https://doi.org/{self.node['doi']}"
         self.node["metadata"]["types"] = {
@@ -366,47 +369,45 @@ class DOISerialIssueWork(MedraVisitor):
 
         self.nodes.append(self.node)
 
-    @debug
-    def visit_WorkIdentifier(self, node, parent=None):
+    @tc.typecheck
+    def visit_WorkIdentifier(self, node: Element):
         """Visit method for WorkIdentifier tag."""
 
         if node.find(xsd_ns("WorkIDType")).text != "06":
             return
 
-        self.extend(
+        self.append(
             "relatedIdentifiers",
-            [
-                {
-                    "relatedIdentifier": node.find(xsd_ns("IDValue")).text,
-                    "relatedIdentifierType": "DOI",
-                    "relationType": "IsSupplementedBy",
-                }
-            ],
+            {
+                "relatedIdentifier": node.find(xsd_ns("IDValue")).text,
+                "relatedIdentifierType": "DOI",
+                "relationType": "IsSupplementedBy",
+            },
         )
 
-    @debug
-    def visit_SerialWork(self, node, parent=None):
+    @tc.typecheck
+    def visit_SerialWork(self, node: Element):
         """Visit method for SerialWork tag."""
         self.titles = []
 
-        self.visit(node, parent)
+        self.visit(node)
 
         self.node["metadata"]["titles"] = self.titles
 
-    @debug
-    def visit_JournalIssue(self, node, parent=None):
+    @tc.typecheck
+    def visit_JournalIssue(self, node: Element):
         """Visit method for JournalIssue tag."""
-        self.visit(node, parent=parent)
+        self.visit(node)
 
-    @debug
-    def visit_JournalIssueDesignation(self, node, parent=None):
+    @tc.typecheck
+    def visit_JournalIssueDesignation(self, node: Element):
         """Visit method for JournalIsseDesignation tag."""
-        self.extend(
+        self.append(
             "descriptions",
-            [{"description": node.text, "descriptionType": "SeriesInformation"}],
+            {"description": node.text, "descriptionType": "SeriesInformation"},
         )
 
-    @debug
-    def visit_RelatedWork(self, node, parent=None):
+    @tc.typecheck
+    def visit_RelatedWork(self, node: Element):
         """Visit method for RelatedWork tag."""
-        self.visit(node, parent=parent)
+        self.visit(node)
