@@ -19,7 +19,7 @@ import typecheck as tc
 from lxml import etree
 from lxml.etree import _Element as Element
 
-from .helper import xsd_ns
+from .utils import xsd_ns
 
 
 class MedraVisitor:
@@ -29,27 +29,17 @@ class MedraVisitor:
     node: dict = {
         "metadata": {},
         "doi": "",
-        "id": "",
         "url": "",
     }
     titles: List[dict] = []
 
-    def __init__(self, test_mode=True, prefix=None, test_prefix=None):
-        if test_mode and (prefix is None or test_prefix is None):
-            raise ValueError(
-                "if the test_mode is activate the prefix and the test_prefix has to be set"
-            )
-
-        self.test_mode = test_mode
-        self.prefix = prefix
-        self.test_prefix = test_prefix
-
-    def create(process_type, test_mode=True, prefix=None, test_prefix=None):
+    @classmethod
+    def create(cls, process_type: str):
         """Create the medra visitor."""
         if process_type == "article":
-            return DOISerialArticleWork(test_mode, prefix, test_prefix)
+            return DOISerialArticleWork()
         elif process_type == "issue":
-            return DOISerialIssueWork(test_mode, prefix, test_prefix)
+            return DOISerialIssueWork()
         else:
             raise ValueError("wrong schema given")
 
@@ -80,7 +70,6 @@ class MedraVisitor:
         self.node = {
             "metadata": {},
             "doi": "",
-            "id": "",
             "url": "",
         }
 
@@ -103,12 +92,7 @@ class MedraVisitor:
     @tc.typecheck
     def visit_DOI(self, node: Element):
         """Visit method for DOI tag."""
-        doi = node.text
-
-        if self.test_mode:
-            doi = doi.replace(self.prefix, self.test_prefix)
-
-        self.node["doi"] = doi
+        self.node["doi"] = node.text
 
     @tc.typecheck
     def visit_DOIWebsiteLink(self, node: Element):
@@ -315,7 +299,6 @@ class DOISerialArticleWork(MedraVisitor):
 
         self.visit(node)
 
-        self.node["id"] = f"https://doi.org/{self.node['doi']}"
         self.node["metadata"]["types"] = {
             "resourceTypeGeneral": "DataPaper",
             "resourceType": "Article",
@@ -357,7 +340,6 @@ class DOISerialIssueWork(MedraVisitor):
         for abstract in self.abstracts:
             self.append("descriptions", abstract)
 
-        self.node["id"] = f"https://doi.org/{self.node['doi']}"
         self.node["metadata"]["types"] = {
             "resourceTypeGeneral": "Collection",
             "resourceType": "Issue",
