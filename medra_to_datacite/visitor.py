@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2020 Graz University of Technology
+# Copyright (C) 2020-2022 Graz University of Technology
 #
 # medra-to-datacite is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -11,7 +11,6 @@ MedraVisitor.
 This visitor transforms a xml file represenation of the medra standard into
 json file representation of the datacite standard.
 """
-
 
 from typing import List
 
@@ -221,6 +220,20 @@ class MedraVisitor:
     def visit_ContributorRole(self, node: Element):
         """Visit method for ContributorRole tag."""
         pass
+
+    @tc.typecheck
+    def visit_NameIdentifier(self, node: Element):
+        """Visit method for NameIdentifier tag."""
+        name_id_type = node.find(xsd_ns("NameIDType")).text
+
+        if name_id_type == "21":
+            self.contributor["nameIdentifier"] = {
+                "nameIdentifier": node.find(xsd_ns("IDValue")).text,
+                "nameIdentifierScheme": "ORCID",
+                "schemeURI": "https://orcid.org/",
+            }
+        else:
+            raise ValueError("type not yet implemented")
 
     @tc.typecheck
     def visit_PersonName(self, node: Element):
