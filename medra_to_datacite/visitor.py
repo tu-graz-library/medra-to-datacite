@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2020-2022 Graz University of Technology
+# Copyright (C) 2020-2023 Graz University of Technology
 #
 # medra-to-datacite is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -12,51 +12,51 @@ This visitor transforms a xml file represenation of the medra standard into
 json file representation of the datacite standard.
 """
 
-from typing import List
+from xml.etree.ElementTree import Element
 
-import typecheck as tc
-from lxml import etree
-from lxml.etree import _Element as Element
+from .utils import QName
 
-from .utils import xsd_ns
+
+class MedraVisitorFactory:
+    @classmethod
+    def create(cls, process_type: str, namespace: str):
+        """Create the medra visitor."""
+        if process_type == "article":
+            return DOISerialArticleWork(namespace)
+        elif process_type == "issue":
+            return DOISerialIssueWork(namespace)
+        else:
+            raise ValueError("wrong schema given")
 
 
 class MedraVisitor:
     """MedraVisitor class."""
 
-    nodes: List[dict] = []
+    nodes: list[dict] = []
     node: dict = {
         "metadata": {},
         "doi": "",
         "url": "",
     }
-    titles: List[dict] = []
+    titles: list[dict] = []
 
-    @classmethod
-    def create(cls, process_type: str):
-        """Create the medra visitor."""
-        if process_type == "article":
-            return DOISerialArticleWork()
-        elif process_type == "issue":
-            return DOISerialIssueWork()
-        else:
-            raise ValueError("wrong schema given")
+    def __init__(self, namespace):
+        """Constructor of MedraVisitor."""
+        self.namespace = {"": namespace}
 
-    @tc.typecheck
     def process(self, node: Element):
         """Execute the corresponding method to the tag name."""
 
         def func_not_found(*args, **kwargs):
-            localname = etree.QName(node).localname
-            namespace = etree.QName(node).namespace
+            localname = QName(node).localname
+            namespace = QName(node).namespace
             raise ValueError(f"NO visitor node: '{localname}' ns: '{namespace}'")
 
-        tag_name = etree.QName(node).localname
+        tag_name = QName(node).localname
         visit_func = getattr(self, f"visit_{tag_name}", func_not_found)
         result = visit_func(node)
         return result
 
-    @tc.typecheck
     def append(self, key: str, value: dict):
         if key not in self.node["metadata"]:
             self.node["metadata"][key] = []
@@ -64,7 +64,6 @@ class MedraVisitor:
         if value not in self.node["metadata"][key]:
             self.node["metadata"][key].append(value)
 
-    @tc.typecheck
     def init_node(self):
         self.node = {
             "metadata": {},
@@ -72,114 +71,93 @@ class MedraVisitor:
             "url": "",
         }
 
-    @tc.typecheck
     def visit(self, node: Element):
         """Visit default method and entry point for the class."""
         for child in node:
             self.process(child)
 
-    @tc.typecheck
     def visit_Header(self, node: Element):
         """Visit method for Header tag."""
         pass
 
-    @tc.typecheck
     def visit_NotificationType(self, node: Element):
         """Visit method for NotificationType tag."""
         pass
 
-    @tc.typecheck
     def visit_DOI(self, node: Element):
         """Visit method for DOI tag."""
         self.node["doi"] = node.text
 
-    @tc.typecheck
     def visit_DOIWebsiteLink(self, node: Element):
         """Visit method for DOIWebsiteLink tag."""
         self.node["url"] = node.text
 
-    @tc.typecheck
     def visit_DOIStructuralType(self, node: Element):
         """Visit method for DOIStructuralType tag."""
         pass
 
-    @tc.typecheck
     def visit_RegistrantName(self, node: Element):
         """Visit method for RegistrantName tag."""
         self.node["metadata"]["publisher"] = node.text
 
-    @tc.typecheck
     def visit_RegistrationAuthority(self, node: Element):
         """Visit method for RegistrationAuthority tag."""
         pass
 
-    @tc.typecheck
     def visit_WorkIdentifier(self, node: Element):
         """Visit method for WorkIdentifier tag."""
         pass
 
-    @tc.typecheck
     def visit_SerialPublication(self, node: Element):
         """Visit method for SerialPublication tag."""
         self.visit(node)
 
-    @tc.typecheck
     def visit_SerialWork(self, node: Element):
         """Visit method for SerialWork tag."""
         pass
 
-    @tc.typecheck
     def visit_SerialVersion(self, node: Element):
         """Visit method for SerialVersion tag."""
         pass
 
-    @tc.typecheck
     def visit_Title(self, node: Element):
         """Visit method for Title tag."""
         self.titles.append(
             {
-                "title": node.find(xsd_ns("TitleText")).text,
-                "lang": node.xpath("string(@language)"),
+                "title": node.find("TitleText", self.namespace).text,
+                "lang": node.get("language"),
             }
         )
 
-    @tc.typecheck
     def visit_Publisher(self, node: Element):
         """Visit method for Publisher tag."""
-        publisher = node.find(xsd_ns("PublisherName")).text
+        publisher = node.find("PublisherName", self.namespace).text
         self.node["metadata"]["publisher"] += f" & {publisher}"
 
-    @tc.typecheck
     def visit_CountryOfPublication(self, node: Element):
         """Visit method for CountryOfPublication tag."""
         pass
 
-    @tc.typecheck
     def visit_JournalIssue(self, node: Element):
         """Visit method for JournalIssue tag."""
         pass
 
-    @tc.typecheck
     def visit_JournalVolumeNumber(self, node: Element):
         """Visit method for JournalVolumeNumber tag."""
         pass
 
-    @tc.typecheck
     def visit_JournalIssueNumber(self, node: Element):
         """Visit method for JournalIssueNumber tag."""
         pass
 
-    @tc.typecheck
     def visit_JournalIssueDesignation(self, node: Element):
         """Visit method for JournalIsseDesignation tag."""
         pass
 
-    @tc.typecheck
     def visit_JournalIssueDate(self, node: Element):
         """Visit method for JournalIssueDate tag."""
         pass
 
-    @tc.typecheck
     def visit_ContentItem(self, node: Element):
         """Visit method for ContentItem tag."""
         self.titles = []
@@ -193,17 +171,14 @@ class MedraVisitor:
         for abstract in self.abstracts:
             self.append("descriptions", abstract)
 
-    @tc.typecheck
     def visit_SequenceNumber(self, node: Element):
         """Visit method for SequenceNumber tag."""
         pass
 
-    @tc.typecheck
     def visit_TextItem(self, node: Element):
         """Visit method for TextItem tag."""
         pass
 
-    @tc.typecheck
     def visit_Contributor(self, node: Element):
         """Visit method for Contributor tag."""
         self.contributor = {}
@@ -216,87 +191,75 @@ class MedraVisitor:
         # NOTE: there seams not to be a creators in medra
         self.node["metadata"]["creators"].append(self.contributor)
 
-    @tc.typecheck
     def visit_ContributorRole(self, node: Element):
         """Visit method for ContributorRole tag."""
         pass
 
-    @tc.typecheck
     def visit_NameIdentifier(self, node: Element):
         """Visit method for NameIdentifier tag."""
-        name_id_type = node.find(xsd_ns("NameIDType")).text
+        name_id_type = node.find("NameIDType", self.namespace).text
 
         if name_id_type == "21":
             self.contributor["nameIdentifier"] = {
-                "nameIdentifier": node.find(xsd_ns("IDValue")).text,
+                "nameIdentifier": node.find("IDValue", self.namespace).text,
                 "nameIdentifierScheme": "ORCID",
                 "schemeURI": "https://orcid.org/",
             }
         else:
             raise ValueError("type not yet implemented")
 
-    @tc.typecheck
     def visit_PersonName(self, node: Element):
         """Visit method for PersonName tag."""
         pass
 
-    @tc.typecheck
     def visit_PersonNameInverted(self, node: Element):
         """Visit method for PersonNameInverted tag."""
         self.contributor["name"] = node.text
         self.contributor["nameType"] = "Personal"
 
-    @tc.typecheck
     def visit_KeyNames(self, node: Element):
         """Visit method for KeyNames tag."""
         pass
 
-    @tc.typecheck
     def visit_NamesBeforeKey(self, node: Element):
         """Visit method for NamesBeforeKey tag."""
         pass
 
-    @tc.typecheck
     def visit_ProfessionalAffiliation(self, node: Element):
         """Visit method for ProfessionalAffiliation tag."""
-        self.affiliations.append({"name": node.find(xsd_ns("Affiliation")).text})
+        self.affiliations.append(
+            {"name": node.find("Affiliation", self.namespace).text}
+        )
 
-    @tc.typecheck
     def visit_Language(self, node: Element):
         """Visit method for Language tag."""
         pass
 
-    @tc.typecheck
     def visit_OtherText(self, node: Element):
         """Visit method for OtherText tag."""
         self.abstracts.append(
             {
-                "description": node.find(xsd_ns("Text")).text.strip(),
+                "description": node.find("Text", self.namespace).text.strip(),
                 "descriptionType": "Abstract",
             }
         )
 
-    @tc.typecheck
     def visit_PublicationDate(self, node: Element):
         """Visit method for PublicationDate tag."""
         self.node["metadata"]["publicationYear"] = node.text[:4]
 
-    @tc.typecheck
     def visit_RelatedWork(self, node: Element):
         """Visit method for RelatedWork tag."""
         pass
 
-    @tc.typecheck
     def visit_RelationCode(self, node: Element):
         """Visit method for RelationCode tag."""
         pass
 
-    @tc.typecheck
     def visit_RelatedProduct(self, node: Element):
         """Visit method for RelatedProduct tag."""
         pass
 
-    @tc.typecheck
     def visit_BiographicalNote(self, node: Element):
         """Visit method for BiographicalNote tag."""
         pass
@@ -305,7 +268,6 @@ class MedraVisitor:
 class DOISerialArticleWork(MedraVisitor):
     """DOISerialArticleWork class."""
 
-    @tc.typecheck
     def visit_DOISerialArticleWork(self, node: Element):
         """Visit method for DOISerialArticleWork tag."""
         self.init_node()
@@ -323,7 +285,6 @@ class DOISerialArticleWork(MedraVisitor):
 
         self.nodes.append(self.node)
 
-    @tc.typecheck
     def visit_SerialWork(self, node: Element):
         """Visit method for SerialWork tag."""
         self.titles = []
@@ -338,12 +299,10 @@ class DOISerialArticleWork(MedraVisitor):
 
 
 class DOISerialIssueWork(MedraVisitor):
-    @tc.typecheck
     def init_node(self):
         super().init_node()
         self.node["metadata"] = {"creators": [{"name": ":none"}]}
 
-    @tc.typecheck
     def visit_DOISerialIssueWork(self, node: Element):
         self.init_node()
         self.abstracts = []
@@ -364,23 +323,20 @@ class DOISerialIssueWork(MedraVisitor):
 
         self.nodes.append(self.node)
 
-    @tc.typecheck
     def visit_WorkIdentifier(self, node: Element):
         """Visit method for WorkIdentifier tag."""
-
-        if node.find(xsd_ns("WorkIDType")).text != "06":
+        if node.find("WorkIDType", self.namespace).text != "06":
             return
 
         self.append(
             "relatedIdentifiers",
             {
-                "relatedIdentifier": node.find(xsd_ns("IDValue")).text,
+                "relatedIdentifier": node.find("IDValue", self.namespace).text,
                 "relatedIdentifierType": "DOI",
                 "relationType": "IsSupplementedBy",
             },
         )
 
-    @tc.typecheck
     def visit_SerialWork(self, node: Element):
         """Visit method for SerialWork tag."""
         self.titles = []
@@ -389,12 +345,10 @@ class DOISerialIssueWork(MedraVisitor):
 
         self.node["metadata"]["titles"] = self.titles
 
-    @tc.typecheck
     def visit_JournalIssue(self, node: Element):
         """Visit method for JournalIssue tag."""
         self.visit(node)
 
-    @tc.typecheck
     def visit_JournalIssueDesignation(self, node: Element):
         """Visit method for JournalIsseDesignation tag."""
         self.append(
@@ -402,7 +356,6 @@ class DOISerialIssueWork(MedraVisitor):
             {"description": node.text, "descriptionType": "SeriesInformation"},
         )
 
-    @tc.typecheck
     def visit_RelatedWork(self, node: Element):
         """Visit method for RelatedWork tag."""
         self.visit(node)

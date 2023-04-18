@@ -1,18 +1,24 @@
-import os
-from functools import wraps
-
-from lxml import etree
-
-
-def xsd_ns(localname: str) -> etree.QName:
-    return etree.QName(os.getenv("NS"), localname)
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2020-2023 Graz University of Technology
+#
+# medra-to-datacite is free software; you can redistribute it and/or modify
+# it under the terms of the MIT License; see LICENSE file for more details.
 
 
-def debug(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        if os.getenv("DEBUG") == "True":
-            print(f"debug: {fn.__name__}")
-        return fn(*args, **kwargs)
+class QName:
+    """Local Rewrite for lxml.etree.QName."""
 
-    return wrapper
+    def __init__(self, node):
+        """Constructor for QName."""
+        self.node = node
+
+    @property
+    def localname(self):
+        """Return localname from node with xpath."""
+        return self.node.tag.split("}")[-1]
+
+    @property
+    def namespace(self):
+        """Return namespace from node with xpath."""
+        return self.node.tag.split("}")[0][1:]
