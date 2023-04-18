@@ -35,10 +35,7 @@ for reqs in extras_require.values():
     extras_require["all"].extend(reqs)
 
 install_requires = [
-    "lxml>=4.6.1",
-    "python-dotenv>=0.15.0",
     "click>=7.1.2",
-    "datacite",
 ]
 
 packages = find_packages()
