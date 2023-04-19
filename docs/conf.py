@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+###########################################################
 #
-# Copyright (C) 2020 Graz University of Technology
+# Copyright (C) 2020-2023 Graz University of Technology.
 #
 # medra-to-datacite is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -8,28 +8,26 @@
 """Sphinx configuration."""
 
 
+from datetime import datetime, timezone
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
 
 # -- Project information -----------------------------------------------------
 
+
+def current_year() -> str:
+    """Calculate the current year."""
+    return datetime.now(timezone.utc).year
+
+
 project = "medra-to-datacite"
-copyright = "2020, Christoph Ladurner"
-author = "Christoph Ladurner"
+copyright = f"{current_year()}, Graz University of Technology"  # noqa: A001
+author = "Graz University of Technology"
 
 
 # -- General configuration ---------------------------------------------------
