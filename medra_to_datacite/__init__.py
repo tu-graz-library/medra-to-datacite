@@ -8,6 +8,6 @@
 """Tool to convert medra to datacite and upload to datacite."""
 
 
-from .version import __version__
+__version__ = "0.3.0"
 
-__all__ = __version__
+__all__ = ("__version__",)
