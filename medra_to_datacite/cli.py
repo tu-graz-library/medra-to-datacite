@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#########################################################
 #
 # Copyright (C) 2020-2023 Graz University of Technology
 #
@@ -17,9 +17,8 @@ from .visitor import MedraVisitorFactory
 
 
 @group()
-def cli():
+def cli() -> None:
     """Medra to datacite commandline tool."""
-    pass
 
 
 @cli.command()
@@ -31,9 +30,14 @@ def cli():
     default="article",
 )
 @option("--namespace", required=True, type=STRING)
-def transform(input_file, output_file, process_type, namespace):
+def transform(
+    input_file: File,
+    output_file: File,
+    process_type: str,
+    namespace: str,
+) -> None:
     """Transform the combined xml file to single json files."""
-    tree = parse(input_file)
+    tree = parse(input_file)  # noqa: S314
     visitor = MedraVisitorFactory.create(process_type, namespace)
 
     try:
